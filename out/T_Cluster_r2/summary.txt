@@ -1,0 +1,3 @@
+requests=25682 ok=25664 failed=18
+      17  status=0 TimeoutError
+       1  status=0 ConnectionResetError

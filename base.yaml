@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/healthz"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-check-interval-seconds: "3"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-unhealthy-threshold: "2"
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector: {app: web}
+  ports: [{port: 80, targetPort: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 6
+  selector:
+    matchLabels: {app: web}
+  template:
+    metadata:
+      labels: {app: web}
+    spec:
+      terminationGracePeriodSeconds: 10
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels: {app: web}
+      containers:
+      - name: web
+        image: python:3.12-slim
+        command: ["python","/app/server.py"]
+        env: [{name: SHUTDOWN_MODE, value: "drain_conns"}]
+        ports: [{containerPort: 8080}]
+        readinessProbe:
+          httpGet: {path: /healthz, port: 8080}
+          periodSeconds: 2
+          failureThreshold: 1
+        volumeMounts: [{name: app, mountPath: /app}]
+      volumes:
+      - name: app
+        configMap: {name: appsrc}

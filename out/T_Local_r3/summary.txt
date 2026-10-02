@@ -1,0 +1,4 @@
+requests=26241 ok=26230 failed=11
+       6  status=0 TimeoutError
+       4  status=0 ConnectionResetError
+       1  status=0 ConnectionRefusedError
